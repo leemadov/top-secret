@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embed Data into Image</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Embed Data into Image</h1>
+        <form id="dataForm">
+            <label for="userData">Enter Text:</label>
+            <input type="text" id="userData" name="userData" required>
+            <br><br>
+            <label for="imageUpload">Upload Image:</label>
+            <input type="file" id="imageUpload" accept="image/*" required>
+            <br><br>
+            <button type="submit">Embed Data</button>
+        </form>
+        <canvas id="imageCanvas" width="500" height="500"></canvas>
+        <a id="downloadLink" style="display: none;" download="encoded-image.png">Download Image</a>
+        
+        <h2>Reveal Hidden Text</h2>
+        <input type="file" id="revealImageUpload" accept="image/*" required>
+        <button id="revealButton">Reveal Text</button>
+        <p id="revealedText"></p>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
