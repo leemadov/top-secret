@@ -3,29 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Embed Data into Image</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Dynamic Unique QR</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #222;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: none;
+        }
+
+        label {
+            font-size: 16px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        #qrCanvas, #scannerCanvas {
+            display: block;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+        }
+
+        #downloadLink {
+            display: block;
+            margin: 10px auto;
+            text-align: center;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        #downloadLink:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
+    <h1>Dynamic Unique QR Generator and Scanner</h1>
     <div class="container">
-        <h1>Embed Data into Image</h1>
-        <form id="dataForm">
-            <label for="userData">Enter Text:</label>
-            <input type="text" id="userData" name="userData" required>
-            <br><br>
-            <label for="imageUpload">Upload Image:</label>
-            <input type="file" id="imageUpload" accept="image/*" required>
-            <br><br>
-            <button type="submit">Embed Data</button>
-        </form>
-        <canvas id="imageCanvas" width="500" height="500"></canvas>
-        <a id="downloadLink" style="display: none;" download="encoded-image.png">Download Image</a>
-        
-        <h2>Reveal Hidden Text</h2>
-        <input type="file" id="revealImageUpload" accept="image/*" required>
-        <button id="revealButton">Reveal Text</button>
-        <p id="revealedText"></p>
+        <textarea id="data" rows="4" placeholder="Enter your text"></textarea>
+        <label for="squareSize">Square Size:</label>
+        <input type="range" id="squareSize" min="2" max="20" value="10" oninput="updateSquareSize()">
+        <span id="squareSizeValue">10</span>
+        <p id="letterLimitMessage">Max Letters: </p>
+        <button onclick="generateCustomQR()">Generate QR</button>
+        <canvas id="qrCanvas"></canvas>
+        <a id="downloadLink" download="unique_qr.png">Download QR Code</a>
+
+        <h2>QR Scanner</h2>
+        <input type="file" id="fileInput" accept="image/*" onchange="scanQR(event)">
+        <canvas id="scannerCanvas" width="500" height="500"></canvas>
+        <p id="scannedText">Scanned Data: None</p>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+        const maxCanvasSize = 1000; // Maximum canvas size
+        let currentSquareSize = 10;
+
+        // Update square size and recalculate letter limit
+        function updateSquareSize() {
+            currentSquareSize = parseInt(document.getElementById('squareSize').value, 10);
+            document.getElementById('squareSizeValue').innerText = currentSquareSize;
+            updateLetterLimit();
+        }
+
+        // Calculate maximum letters based on square size
+        function updateLetterLimit() {
+            const squaresPerRow = Math.floor(maxCanvasSize / currentSquareSize);
+            const totalSquares = squaresPerRow * squaresPerRow;
+            const maxLetters = Math.floor(totalSquares);
+
+            // Display max letters
+            document.getElementById('letterLimitMessage').innerText = `Max Letters: ${maxLetters}`;
+
+            // Limit the input in the text area
+            const textArea = document.getElementById('data');
+            if (textArea.value.length > maxLetters) {
+                textArea.value = textArea.value.substring(0, maxLetters);
+            }
+            textArea.maxLength = maxLetters;
+        }
+
+        function generateCustomQR() {
+            const data = document.getElementById('data').value;
+            const encoder = new TextEncoder();
+            const encodedData = encoder.encode(data);
+
+            const canvas = document.getElementById('qrCanvas');
+            const ctx = canvas.getContext('2d');
+            const squareSize = currentSquareSize;
+
+            // Calculate required canvas size
+            const totalSquares = encodedData.length;
+            const squaresPerRow = Math.ceil(Math.sqrt(totalSquares));
+            const requiredCanvasSize = squaresPerRow * squareSize;
+
+            if (requiredCanvasSize > maxCanvasSize) {
+                alert("Input is too large! Adjust square size or reduce text.");
+                return;
+            }
+
+            canvas.width = requiredCanvasSize;
+            canvas.height = requiredCanvasSize;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Encode the data into RGB values
+            for (let i = 0; i < encodedData.length; i++) {
+                const charCode = encodedData[i];
+                const x = (i % squaresPerRow) * squareSize;
+                const y = Math.floor(i / squaresPerRow) * squareSize;
+
+                ctx.fillStyle = `rgb(${charCode}, ${charCode}, ${charCode})`;
+                ctx.fillRect(x, y, squareSize, squareSize);
+            }
+
+            // Set the download link
+            const downloadLink = document.getElementById('downloadLink');
+            downloadLink.href = canvas.toDataURL('image/png');
+        }
+
+        function scanQR(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const scannerCanvas = document.getElementById('scannerCanvas');
+            const ctx = scannerCanvas.getContext('2d');
+            const img = new Image();
+
+            img.onload = () => {
+                scannerCanvas.width = img.width;
+                scannerCanvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                const imageData = ctx.getImageData(0, 0, img.width, img.height);
+                const data = imageData.data;
+
+                const decodedData = [];
+                for (let i = 0; i < data.length; i += 4) {
+                    if (data[i] === data[i + 1] && data[i + 1] === data[i + 2]) {
+                        decodedData.push(data[i]);
+                    }
+                }
+
+                const decoder = new TextDecoder();
+                const scannedText = decoder.decode(Uint8Array.from(decodedData));
+                document.getElementById('scannedText').innerText = `Scanned Data: ${scannedText}`;
+            };
+
+            img.src = URL.createObjectURL(file);
+        }
+
+        // Initialize
+        updateSquareSize();
+    </script>
 </body>
 </html>
