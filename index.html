@@ -3,128 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Unique QR</title>
+    <title>Custom QR Code Generator and Scanner</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
-            color: #333;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
         }
 
         h1 {
-            text-align: center;
-            color: #222;
+            color: #333;
+            margin-bottom: 20px;
         }
 
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #fff;
+            background: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
         }
 
-        textarea {
-            width: 100%;
-            padding: 10px;
+        h2 {
+            color: #444;
+            margin-top: 0;
             margin-bottom: 10px;
-            font-size: 16px;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            resize: none;
-        }
-
-        label {
-            font-size: 16px;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            margin: 10px 0;
+            margin-bottom: 10px;
+            box-sizing: border-box;
         }
 
         button {
-            background: #007bff;
-            color: #fff;
+            background-color: #007bff;
+            color: white;
             border: none;
-            padding: 10px 15px;
+            padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            transition: background-color 0.3s;
         }
 
         button:hover {
-            background: #0056b3;
+            background-color: #0056b3;
         }
 
-        #qrCanvas, #scannerCanvas {
+        canvas {
             display: block;
             margin: 20px auto;
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
         }
 
-        #downloadLink {
-            display: block;
-            margin: 10px auto;
-            text-align: center;
-            color: #007bff;
+        a {
+            display: inline-block;
+            margin-top: 10px;
             text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+            transition: color 0.3s;
         }
 
-        #downloadLink:hover {
-            text-decoration: underline;
+        a:hover {
+            color: #0056b3;
+        }
+
+        .upload-section {
+            margin-top: 20px;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .section {
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Dynamic Unique QR Generator and Scanner</h1>
     <div class="container">
-        <textarea id="data" rows="4" placeholder="Enter your text"></textarea>
-        <label for="squareSize">Square Size:</label>
-        <input type="range" id="squareSize" min="2" max="20" value="10" oninput="updateSquareSize()">
-        <span id="squareSizeValue">10</span>
-        <p id="letterLimitMessage">Max Letters: </p>
-        <button onclick="generateCustomQR()">Generate QR</button>
-        <canvas id="qrCanvas"></canvas>
-        <a id="downloadLink" download="unique_qr.png">Download QR Code</a>
-
-        <h2>QR Scanner</h2>
-        <input type="file" id="fileInput" accept="image/*" onchange="scanQR(event)">
-        <canvas id="scannerCanvas" width="500" height="500"></canvas>
-        <p id="scannedText">Scanned Data: None</p>
+        <h1>Custom QR Code Generator and Scanner</h1>
+        <div class="section">
+            <h2>Generate Code</h2>
+            <input type="text" id="data" placeholder="Enter data" maxlength="3000">
+            <button onclick="generateCustomQR()">Generate</button>
+            <canvas id="qrCanvas" width="600" height="600"></canvas>
+            <a id="downloadLink" href="#" download="custom_qr_code.png">Download Image</a>
+        </div>
+        <div class="upload-section">
+            <h2>Scan Code</h2>
+            <input type="file" id="scanner-input" accept="image/*" onchange="scanCustomQR(event)">
+            <p id="scanned-data"></p>
+        </div>
     </div>
-
     <script>
-        const maxCanvasSize = 1000; // Maximum canvas size
-        let currentSquareSize = 10;
-
-        // Update square size and recalculate letter limit
-        function updateSquareSize() {
-            currentSquareSize = parseInt(document.getElementById('squareSize').value, 10);
-            document.getElementById('squareSizeValue').innerText = currentSquareSize;
-            updateLetterLimit();
-        }
-
-        // Calculate maximum letters based on square size
-        function updateLetterLimit() {
-            const squaresPerRow = Math.floor(maxCanvasSize / currentSquareSize);
-            const totalSquares = squaresPerRow * squaresPerRow;
-            const maxLetters = Math.floor(totalSquares);
-
-            // Display max letters
-            document.getElementById('letterLimitMessage').innerText = `Max Letters: ${maxLetters}`;
-
-            // Limit the input in the text area
-            const textArea = document.getElementById('data');
-            if (textArea.value.length > maxLetters) {
-                textArea.value = textArea.value.substring(0, maxLetters);
-            }
-            textArea.maxLength = maxLetters;
-        }
-
         function generateCustomQR() {
             const data = document.getElementById('data').value;
             const encoder = new TextEncoder();
@@ -132,31 +127,35 @@
 
             const canvas = document.getElementById('qrCanvas');
             const ctx = canvas.getContext('2d');
-            const squareSize = currentSquareSize;
+            const cellSize = 3; // Smaller cell size
+            const canvasSize = 600; // Increased canvas size
+            const charsPerLine = Math.floor(canvasSize / cellSize);
+            const maxLines = Math.floor(canvasSize / cellSize);
 
-            // Calculate required canvas size
-            const totalSquares = encodedData.length;
-            const squaresPerRow = Math.ceil(Math.sqrt(totalSquares));
-            const requiredCanvasSize = squaresPerRow * squareSize;
-
-            if (requiredCanvasSize > maxCanvasSize) {
-                alert("Input is too large! Adjust square size or reduce text.");
-                return;
-            }
-
-            canvas.width = requiredCanvasSize;
-            canvas.height = requiredCanvasSize;
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Encode the data into RGB values
-            for (let i = 0; i < encodedData.length; i++) {
-                const charCode = encodedData[i];
-                const x = (i % squaresPerRow) * squareSize;
-                const y = Math.floor(i / squaresPerRow) * squareSize;
+            // Split the encoded data into lines
+            let lines = [];
+            for (let i = 0; i < encodedData.length; i += charsPerLine) {
+                lines.push(encodedData.slice(i, i + charsPerLine));
+            }
 
-                ctx.fillStyle = `rgb(${charCode}, ${charCode}, ${charCode})`;
-                ctx.fillRect(x, y, squareSize, squareSize);
+            // Ensure we do not exceed the maximum number of lines
+            lines = lines.slice(0, maxLines);
+
+            // Encode the data into RGB values
+            for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+                const line = lines[lineIndex];
+                for (let charIndex = 0; charIndex < line.length; charIndex++) {
+                    const charCode = line[charIndex];
+                    const x = charIndex * cellSize;
+                    const y = lineIndex * cellSize;
+                    ctx.fillStyle = `rgb(${charCode}, ${charCode}, ${charCode})`;
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                }
             }
 
             // Set the download link
@@ -164,39 +163,43 @@
             downloadLink.href = canvas.toDataURL('image/png');
         }
 
-        function scanQR(event) {
+        function scanCustomQR(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            const scannerCanvas = document.getElementById('scannerCanvas');
-            const ctx = scannerCanvas.getContext('2d');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
             const img = new Image();
-
-            img.onload = () => {
-                scannerCanvas.width = img.width;
-                scannerCanvas.height = img.height;
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
                 ctx.drawImage(img, 0, 0);
 
-                const imageData = ctx.getImageData(0, 0, img.width, img.height);
-                const data = imageData.data;
-
-                const decodedData = [];
-                for (let i = 0; i < data.length; i += 4) {
-                    if (data[i] === data[i + 1] && data[i + 1] === data[i + 2]) {
-                        decodedData.push(data[i]);
-                    }
-                }
-
-                const decoder = new TextDecoder();
-                const scannedText = decoder.decode(Uint8Array.from(decodedData));
-                document.getElementById('scannedText').innerText = `Scanned Data: ${scannedText}`;
+                const decodedData = decodeCustomQR(ctx, img.width, img.height);
+                document.getElementById('scanned-data').textContent = decodedData;
             };
-
             img.src = URL.createObjectURL(file);
         }
 
-        // Initialize
-        updateSquareSize();
+        function decodeCustomQR(ctx, width, height) {
+            const decoder = new TextDecoder('utf-8');
+            let encodedData = [];
+
+            const cellSize = 3; // Must match the cell size used in generateCustomQR
+            for (let y = 0; y < height; y += cellSize) {
+                for (let x = 0; x < width; x += cellSize) {
+                    const imageData = ctx.getImageData(x, y, cellSize, cellSize).data;
+                    const r = imageData[0]; // Red component represents the charCode
+                    if (r !== 0) { // Ignore empty blocks
+                        encodedData.push(r);
+                    }
+                }
+            }
+
+            // Decode and clean up unwanted characters
+            const decodedData = decoder.decode(new Uint8Array(encodedData));
+            return decodedData.replace(/[\uFFFD]/g, ''); // Remove replacement characters
+        }
     </script>
 </body>
 </html>
